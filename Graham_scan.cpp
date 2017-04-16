@@ -1,123 +1,112 @@
+#include <cstdio>
+#include <stack>
+#include <algorithm>
 #include<iostream>
-#include<algorithm>
-#include<math.h>
-#include<cstring>
-#include<iomanip>
-#include<stdio.h>
-#include<limits>
-#include<map>
-#include<set>
-#include<list>
-#include<vector>
-#include<stack>
-#define gcd __gcd
-#define pb(x) push_back(x)
-#define ll long long
-#define in(x) scanf("%d",&x)
-#define mod 1000000007
-#define sz(x) x.size()
-#define mst(x,a) memset(x,a,sizeof(x))
-#define pii pair<int,int>
-#define F first
-#define S second
-#define m_p make_pair
-#define all(v) (v.begin(),v.end())
+#include<ctime>
 using namespace std;
-pii p0;
-int dist(pii p,pii q)
-{
-	int res=0;
-	res+=(p.S-q.S);
-	res*=res;
-	int tes=(p.F-q.F);
-	tes*=tes;
-	res+=tes;
-	return res;
-}
-pii next_top(stack<pii>s)
-{
-	s.pop();
-	return s.top();
-}
-int orientation(pii p,pii q,pii r)
-{
-	int res=(q.S-p.S)*(r.F-q.F)-(r.S-q.S)*(q.F-p.F);
-	if(res==0)
-		return 0;//collinear
-	if(res<0)
-		return 2;//counter-clockwise
-	return 1;// clockwise
-}
-bool compare(pii p1,pii p2)
-{
-	int val=(p1.S-p0.S)*(p2.F-p0.F)
-			-(p1.F-p0.F)*(p2.S-p0.S);
-	if(val<0)
-		return 1;
-	if(val>0)
-		return 0;
-	return (dist(p1,p0)<=dist(p2,p0));
-}
-int main()
-{
 
-    ios::sync_with_stdio(0);
-    cout<<"enter the number of points\n";
-    int n;
-    cin>>n;
-    pii a[n];
-    cout<<"enter the points\n";
-    for(int i=0;i<n;i++)
-    	cin>>a[i].F>>a[i].S;
-    if(n<3)
-	{
-		cout<<"convex hull not possible\n";
-		return 0;
-	}
-	int mini=0;
-	for(int i=1;i<n;i++)
-	{
-		if(a[i].S<a[mini].S)
-			mini=i;
-		else if(a[i].S==a[mini].S)
-			if(a[i].F<a[mini].F)
-				mini=i;
-	}
-	p0=a[mini];
-	swap(a[mini],a[0]);
-	sort(a,a+n,compare);
+class Point    {
+public:
+    int x, y;
 
-	vector<pii>final;
-	final.pb(a[0]);
-	for(int i=1;i<n;i++)
-	{
-		while(i+1<n&&orientation(p0,a[i],a[i+1])==0)
-			i++;
-		final.pb(a[i]);
-	}
-	if(sz(final)<3)
-	{
-		cout<<"convex hull not possible\n";
-		return 0;
-	}
-	stack<pii>s;
-	s.push(final[0]);
-	s.push(final[1]);
-	s.push(final[2]);
-	for(int i=3;i<sz(final);i++)
-	{
-		while(orientation(next_top(s),s.top(),final[i])!=2)
-			s.pop();
-		s.push(final[i]);
-	}
-	cout<<"the points in convex hull are:\n";
-	while(!s.empty())
-	{
-		pii temp=s.top();
-		cout<<"("<<temp.F<<","<<temp.S<<")";
-		s.pop();
+    
+    bool operator < (Point b) {
+        if (y != b.y)
+            return y < b.y;
+        return x < b.x;
+    }
+};
+
+
+Point pivot;
+
+
+int CW(Point a, Point b, Point c) {
+    int area = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+    if (area > 0)
+        return -1;
+    else if (area < 0)
+        return 1;
+    return 0;
+}
+
+
+int SQRDistance(Point a, Point b)  {
+    int dx = a.x - b.x, dy = a.y - b.y;
+    return dx * dx + dy * dy;
+}
+
+
+bool POorder(Point a, Point b)  {
+    int order = CW(pivot, a, b);
+    if (order == 0)
+        return SQRDistance(pivot, a) < SQRDistance(pivot, b);
+    return (order == -1);
+}
+
+stack<Point> GRAHAMSCAN(Point *points, int N)    {
+    stack<Point> hull;
+
+    if (N < 3)
+        return hull;
+
+    
+    int leastY = 0;
+    for (int i = 1; i < N; i++)
+        if (points[i] < points[leastY])
+            leastY = i;
+
+ 
+    Point temp = points[0];
+    points[0] = points[leastY];
+    points[leastY] = temp;
+
+ 
+    pivot = points[0];
+    sort(points + 1, points + N, POorder);
+
+    hull.push(points[0]);
+    hull.push(points[1]);
+    hull.push(points[2]);
+
+    for (int i = 3; i < N; i++) {
+        Point top = hull.top();
+        hull.pop();
+        while (CW(hull.top(), top, points[i]) != -1)   {
+            top = hull.top();
+            hull.pop();
+        }
+        hull.push(top);
+        hull.push(points[i]);
+    }
+    return hull;
+}
+
+int main()  {
+	
+	int n,x,y,i;
+	cout<<"Enter No of points :: ";
+	cin>>n;
+	Point points[n];
+
+	cout<<"Now Enter the points locations \n";
+	for(i=0;i<n;i++)
+	{cin>>x>>y;	points[i].x=x;		points[i].y=y;
 	}
 
+
+    
+	clock_t tStart = clock();	
+    stack<Point> hull = GRAHAMSCAN(points, n);
+
+cout<<"\n CONVEX HULL:"<<endl;
+    while (!hull.empty())   {
+        Point p = hull.top();
+        hull.pop();
+
+        printf("(%d, %d)\n", p.x, p.y);
+    }
+cout<<"\nTime taken: "<<(double)(((double)(clock()) - (double)(tStart))/CLOCKS_PER_SEC)<<endl;
     return 0;
 }
 
